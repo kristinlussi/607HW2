@@ -23,7 +23,6 @@ dbname <- "movie_ratings"
 # Establish the database connection
 con <- dbConnect(MySQL(), user = user, password = password, dbname = dbname, host = host)
 
-# Replace "your_table_name" with the name of your table
 query <- "SELECT * FROM ratings"
 
 # Fetch data into a data frame
@@ -155,7 +154,7 @@ maleAvgRatings$Avg_Rating <- round(maleAvgRatings$Avg_Rating, 2)
 # Merge the female and male average ratings by "Movie"
 genderRatings <- merge(femaleAvgRatings, maleAvgRatings, by = "Movie", all = TRUE)
 
-# Rename the columns for clarity (optional)
+# Rename the columns
 colnames(genderRatings) <- c("Movie", "Female_Avg_Rating", "Male_Avg_Rating")
 
 # create a gt table
