@@ -1,0 +1,220 @@
+---
+title: 'DATA 607 Assignment #2'
+author: "Kristin Lussi"
+date: "2023-09-17"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+```{r, message=FALSE}
+library(RMySQL)
+library(dplyr)
+host <- "localhost"
+source("logincredentials.R")
+dbname <- "movie_ratings"
+
+# Establish the database connection
+con <- dbConnect(MySQL(), user = user, password = password, dbname = dbname, host = host)
+
+# Replace "your_table_name" with the name of your table
+query <- "SELECT * FROM ratings"
+
+# Fetch data into a data frame
+movieRatings <- dbGetQuery(con, query)
+
+colnames(movieRatings) <- c("Name", "Gender", "Age", "Barbie_Rating", "Oppenheimer_Rating", "Passages_Rating", "Nimona_Rating", "TheLittleMermaid_Rating", "MissionImpossible_Rating")
+
+# change "NA" to NA
+movieRatings <- movieRatings %>%
+  mutate_all(~ ifelse(. == "NA", NA, .))
+
+# change rating and age columns to numeric
+movieRatings <- movieRatings %>%
+  mutate_at(vars(Age, Barbie_Rating, Oppenheimer_Rating, Passages_Rating, Nimona_Rating, TheLittleMermaid_Rating, MissionImpossible_Rating), as.numeric)
+
+```
+
+In this analysis, I conducted a Google Forms survey asking people to rank 6 recently released movies on a scale of 1-5. The movies in question are: Barbie, Oppenheimer, The Little Mermaid, Passages, Nimona, and Mission Impossible - Dead Reckoning. Not all people surveyed had seen every movie. 
+
+Below is a glimpse of the data: 
+```{r, echo=FALSE}
+head(movieRatings)
+```
+
+After the "Barbenheimer" debate, I was interested to see if there was a correlation in ratings for movies based on gender. From social media, it seemed like women were more excited for the Barbie movie, while men were more excited for Oppenheimer. 
+
+# Analysis
+
+In this analysis, I want to see which movies (out of the 6 surveyed) each gender prefers. 
+
+```{r, echo=FALSE, include = FALSE}
+# removing the inappropriate entry
+movieRatings <- subset(movieRatings, Name != "Vagina")
+```
+
+Below is a table showing the average ratings for each movie:
+```{r, message=FALSE}
+library(tidyr)
+library(gt)
+
+# Reshape Data
+avgRatings <- movieRatings %>%
+  pivot_longer(
+    cols = c(`Barbie_Rating`, `Oppenheimer_Rating`, `Passages_Rating`, `Nimona_Rating`, `TheLittleMermaid_Rating`, `MissionImpossible_Rating`),
+    names_to = "Movie",
+    values_to = "Rating"
+  )
+
+# Calculate the average ratings for each movie and sort in decreasing order
+avgRatings <- avgRatings %>%
+  group_by(Movie) %>%
+  summarise(Avg_Rating = mean(Rating, na.rm = TRUE) 
+  )
+
+# Arrange the results in descending order by Avg_Rating
+avgRatings <- avgRatings %>%
+  arrange(desc(Avg_Rating))
+
+# Round the Avg_Rating column to two decimal points
+avgRatings$Avg_Rating <- round(avgRatings$Avg_Rating, 2)
+
+# Rename the movie column contents
+avgRatings$Movie <- sub("_Rating", "", avgRatings$Movie)
+avgRatings$Movie <- sub("MissionImpossible", "Mission Impossible", avgRatings$Movie)
+avgRatings$Movie <- sub("TheLittleMermaid", "The Little Mermaid", avgRatings$Movie)
+
+## Create a gt table
+avgRatings_tbl <- gt(avgRatings)
+
+# Customize gt table
+avgRatings_tbl <- avgRatings_tbl |>
+  tab_header(
+    title = md("**Average Rating per Movie**")
+  ) |>
+  cols_label(
+    Movie = md("**Movie**"), Avg_Rating = md("**Average Rating**")
+  ) 
+
+avgRatings_tbl
+```
+
+Below is a table combining the average ratings for each movie for each gender:
+```{r}
+
+colnames(movieRatings) <- c("Name", "Gender", "Age", "Barbie", "Oppenheimer", "Passages", "Nimona", "The Little Mermaid", "Mission Impossible")
+
+## female average ratings
+# create a subset of the female ratings
+femaleRatings <- subset(movieRatings, Gender == "Female")
+
+# Reshape Data
+femaleAvgRatings <- femaleRatings %>%
+  pivot_longer(
+    cols = c(`Barbie`, `Oppenheimer`, `Passages`, `Nimona`, `The Little Mermaid`, `Mission Impossible`),
+    names_to = "Movie",
+    values_to = "Rating"
+  )
+
+# Calculate the average ratings for each movie and sort in decreasing order
+femaleAvgRatings <- femaleAvgRatings %>%
+  group_by(Movie) %>%
+  summarise(Avg_Rating = mean(Rating, na.rm = TRUE) 
+  )
+
+# Round the Avg_Rating column to two decimal points
+femaleAvgRatings$Avg_Rating <- round(femaleAvgRatings$Avg_Rating, 2)
+
+## male average ratings
+# create a subset of the male ratings
+maleRatings <- subset(movieRatings, Gender == "Male")
+
+# Reshape Data
+maleAvgRatings <- maleRatings %>%
+  pivot_longer(
+    cols = c(`Barbie`, `Oppenheimer`, `Passages`, `Nimona`, `The Little Mermaid`, `Mission Impossible`),
+    names_to = "Movie",
+    values_to = "Rating"
+  )
+
+# Calculate the average ratings for each movie and sort in decreasing order
+maleAvgRatings <- maleAvgRatings %>%
+  group_by(Movie) %>%
+  summarise(Avg_Rating = mean(Rating, na.rm = TRUE) 
+  )
+
+# Round the Avg_Rating column to two decimal points
+maleAvgRatings$Avg_Rating <- round(maleAvgRatings$Avg_Rating, 2)
+
+# Merge the female and male average ratings by "Movie"
+genderRatings <- merge(femaleAvgRatings, maleAvgRatings, by = "Movie", all = TRUE)
+
+# Rename the columns for clarity (optional)
+colnames(genderRatings) <- c("Movie", "Female_Avg_Rating", "Male_Avg_Rating")
+
+# create a gt table
+genderRatings_tbl <- gt(genderRatings)
+
+genderRatings_tbl <- genderRatings_tbl |>
+  tab_header(
+    title = md("**Average Rating per Movie for Each Gender**")
+  ) |>
+  cols_label(
+    Movie = md("**Movie**"), Female_Avg_Rating = md("**Female**"), Male_Avg_Rating = md("**Male**")
+  ) 
+
+genderRatings_tbl
+```
+
+Below, we visualize the difference in ratings for each gender for each movie:
+```{r}
+library(ggplot2)
+
+movies <- c("Barbie", "Oppenheimer", "Passages", "The Little Mermaid", "Nimona", "Mission Impossible")
+
+
+
+movie_data <- genderRatings %>%
+  filter(Movie %in% movies) %>%
+  select(Movie, Female_Avg_Rating, Male_Avg_Rating)
+
+# Side-by-side bar chart
+ggplot(movie_data, aes(x = Movie)) +
+  geom_bar(aes(y = Female_Avg_Rating, fill = "Female"), stat = "identity", position = "dodge", alpha = 0.75, color="hotpink") +
+  geom_bar(aes(y = Male_Avg_Rating, fill = "Male"), stat = "identity", position = "dodge", alpha = 0.5, color = "blue") +
+  labs(title = "Comparison of Male and Female Ratings",
+       x = "Movie",
+       y = "Rating") +
+  scale_fill_manual(values = c("Female" = "hotpink", "Male" = "blue")) +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        legend.position = "top") +
+  coord_flip()
+
+
+```
+
+# Conclusion
+
+In conclusion, the top 2 movies for women are Barbie and Oppenheimer, while the top 2 movies for men are Mission Impossible and Oppenheimer. It was interesting to see that the average ratings for Oppenheimer were very close (being 4.43 for women and 4.67 for men). As predicted, ratings for Barbie from men were much lower than ratings from women. However, women seem to be just as interest in Oppenheimer as men. Overall, men seem to have more interest in action, thriller, and drama movies, while women seem to have more interest in action, thriller, and fantasy movies. 
+
+# Future Research
+
+If someone were to further their research on this topic, I would suggest to conduct a survey with a larger amount of movies. This way, it would be more accurate to assume a gender's preference based on genre of movie. 
+
+## Sources
+
+### CNN. (2023, July 20). "Barbie Oppenheimer Barbenheimer" Reliable Sources. 
+Retrieved from https://www.cnn.com/2023/07/20/media/barbie-oppenheimer-barbenheimer-reliable-sources/index.html
+
+### GitHub
+
+https://github.com/kristinlussi/607HW2/blob/2087e178cb550e36a2cf5981eced42289ea47c24/MOVIERATINGS.sql
+
+https://github.com/kristinlussi/607HW2/blob/2087e178cb550e36a2cf5981eced42289ea47c24/MovieRatings%20-%20Sheet1.csv
