@@ -13,26 +13,22 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-```{r, message=FALSE}
+```{r, message=FALSE, warning = FALSE}
 library(RMySQL)
 library(dplyr)
 host <- "localhost"
 source("logincredentials.R")
-dbname <- "movie_ratings"
+dbname <- "movieRatingsData"
 
 # Establish the database connection
 con <- dbConnect(MySQL(), user = user, password = password, dbname = dbname, host = host)
 
-query <- "SELECT * FROM ratings"
+query <- "SELECT * FROM movieRatings"
 
 # Fetch data into a data frame
 movieRatings <- dbGetQuery(con, query)
 
-colnames(movieRatings) <- c("Name", "Gender", "Age", "Barbie_Rating", "Oppenheimer_Rating", "Passages_Rating", "Nimona_Rating", "TheLittleMermaid_Rating", "MissionImpossible_Rating")
-
-# change "NA" to NA
-movieRatings <- movieRatings %>%
-  mutate_all(~ ifelse(. == "NA", NA, .))
+colnames(movieRatings) <- c("ID", "Name", "Gender", "Age", "Barbie_Rating", "Oppenheimer_Rating", "Passages_Rating", "Nimona_Rating", "TheLittleMermaid_Rating", "MissionImpossible_Rating")
 
 # change rating and age columns to numeric
 movieRatings <- movieRatings %>%
@@ -107,7 +103,7 @@ avgRatings_tbl
 Below is a table combining the average ratings for each movie for each gender:
 ```{r}
 
-colnames(movieRatings) <- c("Name", "Gender", "Age", "Barbie", "Oppenheimer", "Passages", "Nimona", "The Little Mermaid", "Mission Impossible")
+colnames(movieRatings) <- c("ID","Name", "Gender", "Age", "Barbie", "Oppenheimer", "Passages", "Nimona", "The Little Mermaid", "Mission Impossible")
 
 ## female average ratings
 # create a subset of the female ratings
@@ -172,12 +168,10 @@ genderRatings_tbl
 ```
 
 Below, we visualize the difference in ratings for each gender for each movie:
-```{r}
+```{r, warning = FALSE}
 library(ggplot2)
 
 movies <- c("Barbie", "Oppenheimer", "Passages", "The Little Mermaid", "Nimona", "Mission Impossible")
-
-
 
 movie_data <- genderRatings %>%
   filter(Movie %in% movies) %>%
@@ -195,8 +189,6 @@ ggplot(movie_data, aes(x = Movie)) +
   theme(legend.title = element_blank(),
         legend.position = "top") +
   coord_flip()
-
-
 ```
 
 # Conclusion
