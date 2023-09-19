@@ -1,1 +1,0 @@
-RENAME TABLE `movie_ratings`.`tableconvert.com_85qqnm` TO `movie_ratings`.`ratings`;
