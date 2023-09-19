@@ -27,7 +27,7 @@ VALUES
     ('Caitlyn', 'Female', 24, 5, NULL, NULL, NULL, 5, NULL),
     ('Jooj', 'Female', 22, NULL, 4, NULL, NULL, NULL, NULL),
     ('John', 'Male', 59, NULL, 5, NULL, NULL, NULL, 5),
-    ('Zoe', 'Female', 52, 4, 5, NULL, NULL,movieRatings NULL, 5),
+    ('Zoe', 'Female', 52, 4, 5, NULL, NULL, NULL, 5),
     ('Dana', 'Female', 63, 4, NULL, NULL, NULL, NULL, NULL),
     ('Zip', 'Male', 26, 4, NULL, NULL, NULL, 3, 5),
     ('Talia', 'Female', 23, NULL, NULL, NULL, NULL, NULL, NULL),
